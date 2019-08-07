@@ -1,16 +1,15 @@
-# Vulnerability report REST API
+# REST API for blog posts
 
-> A security API that can be used to query information about vulnerability reports. Fully compliant with the JSON API specification. The API always returns a JSON response and implements REST to access resources.
+> A posts API that can be used to query information about blog posts with tags. Fully compliant with the JSON API specification. The API always returns a JSON response and implements REST to access resources.
 
 ## Table of Contents
 
 1. [Requirements](#requirements)
-2. [Seeding Database](#Seeding-Database)
-3. [Usage](#Usage)
-4. [REST API Routes](#REST-API-Routes)
-5. [API Examples](#API-Examples)
-6. [Testing](#Testing)
-7. [Future Features](#Future-features)
+2. [Usage](#Usage)
+3. [API Routes](#REST-API-Routes)
+4. [API Examples](#API-Examples)
+5. [Testing](#Testing)
+6. [Future Features](#Future-features)
 
 ## Requirements
 
@@ -18,15 +17,14 @@ An `nvmrc` file is included if using [nvm](https://github.com/creationix/nvm).
 
 - Node 8.10.0
 
-### Seeding Database
-
 ## Usage
-
+Insert API client ID and secret in server/config/indexExample.js, then rename it to index.js.
+ 
 From within the root directory:
 ```sh
 npm install
+npm run react-dev
 npm start
-npm run seed
 ```
 - In a browser, go to: localhost:3000
 
@@ -34,107 +32,93 @@ npm run seed
 
 | Type  | Route | Description |
 | ------------- | ------------- |------------- |
-| GET  | ```/api/v1/reports/:id or /api/v1/reports?_id=123```  | Responds with entry in database corresponding to specified id. Responds with 200 status code if successful, 404 if not found. |
-| PUT  | ```/api/v1/reports/:id or /api/v1/reports?_id=123```  | Updates entry corresponding to specified id and responds with 200 status code if successful, 404 if entry is not found. |
-| POST  | ```/api/v1/reports```  | Posts request body to the database, and responds with the newly added entry. Responds with 201 status code if successful, 400 if the request is malformed. See example request body. |
-| DELETE  | ```/api/v1/reports/:id  or /api/v1/reports?_id=123```  | Deletes entry corresponding to specified id and responds with 204 status code upon successful scheduling. A 404 status code is sent if no such entry exists. |
+| GET  | ```/api/ping```  | Returns a 200 response affirming the API is working |
+| GET  | ```/api/posts```  | Returns posts in JSON format. The 'tags' query parameter is requied. SortBy and direction params are optional. |
+
+| Field  | Type | Description | Example | 
+| ------------- | ------------- |------------- |------------- |
+| tags  | ```String (required)```  | Comma delimited tags |
+| sortBy  | ```String (optional)```  | One of id, reads, likes, or popularity |
+| direction  | ```String (optional)```  | Whether to sort ascending or descending order. One of asc or desc |
 
 ## API Examples
 
-- Read all Report objects, example response (enveloped):
-```GET: /api/v1/reports```
+- Ping:
+```GET: /api/ping/```
 ```
 {
-  data: [{
-    "_id": "1337",
-    "type": "report",
-    "attributes": {
-      "title": "XSS in login form",
-      "created_at": "2016-02-02T04:05:06.000Z",
-    },
-    "relationships": {
-      "reporter": {
-        "data": {
-          "_id": "1337",
-          "type": "user",
-          "attributes": {
-            "username": "api-example",
-            "name": "API Example",
-            "created_at": "2016-02-02T04:05:06.000Z",
-          }
-        }
-      },
-      "weakness": {
-        "data": {
-          "_id": "1337",
-          "type": "weakness",
-          "attributes": {
-            "name": "Cross-Site Request Forgery (CSRF)",
-            "description": "The web application does not, or can not, sufficiently verify whether a well-formed, valid, consistent request was intentionally provided by the user who submitted the request.",
-            "created_at": "2016-02-02T04:05:06.000Z"
-          }
-        }
-      }
-    }
-  }]
+  data: {
+    success: true
+  };
 }
   ```
 
-- Read a single Report object with a particular id:
- ```GET: /api/v1/reports/456```  
-or  
-```GET: /api/v1/reports?_id=456```  
-
-- Create a Report object on the server:
-```POST: /api/v1/reports```
-Example request body:
-
+- Posts:
+```GET: /api/posts?tags=tech```
 ```
 {
-  "type": "report",
-  "attributes": {
-    "title": "XSS in login form",
-  },
-  "relationships": {
-    "weakness": {
-      "data": {
-        "type": "weakness",
-        "attributes": {
-          "name": "Cross-Site Request Forgery (CSRF)",
-          "description": "The web application does not, or can not, sufficiently verify whether a well-formed, valid, consistent request was intentionally provided by the user who submitted the request.",
-        }
-      }
-    }
-  }
+  "posts": [
+    {
+      "author": "Rylee Paul",
+      "authorId": 9,
+      "id": 1,
+      "likes": 960,
+      "popularity": 0.13,
+      "reads": 50361,
+      "tags": [
+        "tech",
+        "health"
+      ]
+    },
+    ...
+  ]
 }
-```
+  ```
 
-Note: A user with username 'root' is automatically created if user is not specified. Each entry is automatically timestamped. If entry structure differs, a 400 (Bad request) is returned.
-
-- Update a specific Report object:
-```PUT: /api/v1/reports``` (Requires "_id" field in request body)  
-or  
-```PUT: /api/v1/reports/:id```  
-Example request body:
-
+- SortBy:
+```GET: /api/posts?tags=tech&sortBy=likes```
 ```
 {
-  "attributes": {
-    "title": "New report title",
-  }
+  "posts": [
+    {
+      "author": "Bryson Bowers",
+      "authorId": 6,
+      "id": 85,
+      "likes": 25,
+      "popularity": 0.18,
+      "reads": 16861,
+      "tags": [
+        "tech"
+      ]
+    },
+    ...
+  ]
 }
-```
-- Delete a specific Report object:
-```DELETE: /api/v1/reports``` (Requires "_id" field in request body)
-or 
-```DELETE: /api/v1/reports/:id```
-Example request body:
+  ```
 
+- direction:
+```GET: /api/posts?tags=tech&sortBy=likes&direction=desc```
 ```
 {
-  "_id": 300
+  "posts": [
+    {
+      "author": "Jon Abbott",
+      "authorId": 4,
+      "id": 95,
+      "likes": 985,
+      "popularity": 0.42,
+      "reads": 55875,
+      "tags": [
+        "politics",
+        "tech",
+        "health",
+        "history"
+      ]
+    },
+    ...
+  ]
 }
-```
+  ```
 
 ## Testing
 
@@ -145,11 +129,10 @@ npm test
 
 ## Future features
 Todo:
-  - Allow pagination
-  - Allow filtering by username and Report title
-  - Allow sorting by id
-  - Enable user creation
-  - Implement authentication protocol
+  - Add Redis caching (it's late and I have to go to bed)
+  - Deploy to AWS, horizontally scale EC2 instances
   - Support additional endpoints for field selection
   - More comprehensive payloads with custom error messages
   - Allow overriding HTTP method to support certain proxies
+  - Allow pagination
+

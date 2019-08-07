@@ -1,33 +1,28 @@
-/* eslint-disable no-console */
-const mongoose = require('mongoose');
-
-const autoIncrement = require('mongoose-auto-increment');
-
-const schemas = require('./schemas');
-
-const mongoURI = 'mongodb://localhost:27017/hackerone-api';
-
-const db = mongoose.connect(mongoURI, { useNewUrlParser: true });
-
-autoIncrement.initialize(mongoose.connection);
-
-db
-  .then(() => console.log(`Connected to: ${mongoURI}`))
-  .catch((err) => {
-    console.log(`There was a problem connecting to mongo at: ${mongoURI}`);
-    console.log(err);
-  });
-
-schemas.reportSchema.plugin(autoIncrement.plugin, 'Report');
-schemas.weaknessSchema.plugin(autoIncrement.plugin, 'Weakness');
-
-/* Mongoose models */
-const Weakness = mongoose.model('Weakness', schemas.weaknessSchema);
-const Report = mongoose.model('Report', schemas.reportSchema);
+const axios = require('axios');
+const helpers = require('../helpers');
 
 module.exports = {
-  db,
-  Weakness,
-  Report,
-  mongoose,
+  get: (tags, sortBy = 'id', direction = 'asc') => {
+    const tagsArr = tags.split(','); // Convert the tags into an array
+    const promises = [];
+    const url = 'SOME API';
+
+    tagsArr.forEach((tag) => {
+      promises.push(
+
+        // Push each promise into the array
+        axios.get(`${url}?tag=${tag}`),
+      );
+    });
+
+    return Promise.all(promises)
+      .then(
+        posts => helpers.concat(posts), // Concatenate all posts
+      ).then(
+        posts => helpers.filter(posts), // Filter by ID in O(n) time
+      )
+      .then(
+        posts => helpers.validate(posts, sortBy, direction), // Validate query params
+      );
+  },
 };

@@ -9,170 +9,230 @@ const axios = require('axios');
 
 const PORT = process.env.PORT || 3000;
 
-let id;
+const url = `http://localhost:${PORT}/api/`;
 
-const url = `http://localhost:${PORT}/api/v1/reports`;
+// Customize axios to not reject promises on 400-level requests
+const request = axios.create({
+  validateStatus: status => status >= 200 && status <= 503,
+});
 
-const postBody = {
-  type: 'report',
-  attributes: {
-    title: 'XSS in login form',
-  },
-  relationships: {
-    weakness: {
-      data: {
-        type: 'weakness',
-        attributes: {
-          name: 'Cross-Site Request Forgery (CSRF)',
-          description: 'The web application does not, or can not, sufficiently verify whether a well-formed, valid, consistent request was intentionally provided by the user who submitted the request.',
-        },
-      },
-    },
-  },
-};
-
-describe('Basic CRUD Functionality of API', () => {
-  it('should persist reports to the db upon POST request', () => axios.post(url, postBody)
-    .then((res) => {
-      const response = res.data.data;
-      const { weakness, reporter } = response.relationships;
-
-      // Expect the response to have a 'type' of report
-      expect(response.type).to.equal('report');
-
-      // Expect the title to be the same
-      expect(response.attributes.title).to.equal(postBody.attributes.title);
-
-      // Expect the response to have a description
-      expect(weakness.data.attributes.description).to.equal(postBody.relationships.weakness.data.attributes.description);
-
-      // Expect the response to have a user
-      expect(reporter.data.type).to.equal('user');
-
-      // Expect the response to have a created_at timestamp
-      expect(response.attributes.created_at).to.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/i);
-    }));
-
-  it('should respond with Report objects upon GET request', () => axios.get(url)
-    .then((res) => {
-      const response = res.data.data[res.data.data.length - 1];
-      const { weakness, reporter } = response.relationships;
-
-      // Expect the response to have a 'type' of report
-      expect(response.type).to.equal('report');
-
-      // Expect the title to be the same
-      expect(response.attributes.title).to.equal(postBody.attributes.title);
-
-      // Expect the response to have a description
-      expect(weakness.data.attributes.description).to.equal(postBody.relationships.weakness.data.attributes.description);
-
-      // Expect the response to have a user
-      expect(reporter.data.type).to.equal('user');
-
-      // Expect the response to have a created_at timestamp
-      expect(response.attributes.created_at).to.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/i);
-    }));
-
-  it('should update an entry by ID upon a PUT request after POST', () => axios.post(url, postBody)
-    .then((res) => {
-      const { data } = res.data;
-
-      id = data._id;
-
-      const putData = Object.assign({}, data, {
-        attributes: {
-          title: 'CSRF vulnerability',
-        },
-      });
-
-      return axios.put(url, putData);
-    })
-    .then((res) => {
-      const { data } = res.data;
-
-      // 200 response code should be returned
-      expect(res.status).to.equal(200);
-
-      // Only 1 entry should be modified
-      expect(data.nModified).to.equal(1);
-    }));
-
-  it('should delete an entry by ID upon a DELETE request after POST', () => axios.post(url, postBody)
-    .then((res) => {
-      const { data } = res.data;
-
-      const clonedData = Object.assign({}, data);
-
-      return axios.delete(url, { clonedData });
-    })
+describe('Basic functionality of API', () => {
+  it('should return 200 response on ping', () => request.get(`${url}/ping`)
     .then((res) => {
       const { data } = res;
 
-      // 204 response code should be returned
-      expect(res.status).to.equal(204);
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
 
-      // No content should be returned
-      expect(data).to.equal('');
+      // Expect the response to have a success property
+      expect(data.success).to.equal(true);
+    }));
+
+  it('should return an error when tags not specified', () => request(`${url}/posts`)
+    .then((res) => {
+      const { data } = res;
+      const error = 'The tags parameter is required';
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(400);
+
+      // Expect the response to have a success property
+      expect(data.error).to.equal(error);
+    }));
+
+  it('should return list of posts when tag is specified', () => request(`${url}/posts?tags=tech`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect 28 posts to be returned
+      expect(posts.length).to.equal(28);
+
+      // Expect all posts to have the tech tag
+      posts.forEach(({ tags }) => expect(tags).to.include('tech'));
     }));
 });
 
-describe('Extended CRUD functionality of API', () => {
-  it('should support URL query string for GET request', () => axios.get(`${url}?_id=${id}`)
-    .then((res) => {
-      const response = res.data.data[res.data.data.length - 1];
-      const { weakness, reporter } = response.relationships;
-
-      // Expect the response to have a 'type' of report
-      expect(response.type).to.equal('report');
-
-      // Expect the response to have a description
-      expect(weakness.data.attributes.description).to.equal(postBody.relationships.weakness.data.attributes.description);
-
-      // Expect the response to have a user
-      expect(reporter.data.type).to.equal('user');
-
-      // Expect the response to have a created_at timestamp
-      expect(response.attributes.created_at).to.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/i);
-    }));
-
-  it('should support URL query string for a PUT request after POST', () => axios.post(url, postBody)
-    .then((res) => {
-      const { data } = res.data;
-
-      const putData = Object.assign({}, data, {
-        attributes: {
-          title: 'CSRF vulnerability',
-        },
-      });
-
-      return axios.put(`${url}/${putData._id}`, putData);
-    })
-    .then((res) => {
-      const { data } = res.data;
-
-      // 200 response code should be returned
-      expect(res.status).to.equal(200);
-
-      // Should return updated document instead of original
-      expect(data.attributes.title).to.equal('CSRF vulnerability');
-    }));
-
-  it('should support URL query strings for a DELETE request after POST', () => axios.post(url, postBody)
-    .then((res) => {
-      const { data } = res.data;
-
-      const clonedData = Object.assign({}, data);
-
-      return axios.delete(`${url}/${clonedData._id}`, { data });
-    })
+describe('Advanced functionality of API', () => {
+  it('should sort all posts by id in ascending order by default', () => request(`${url}/posts?tags=tech`)
     .then((res) => {
       const { data } = res;
+      const { posts } = data;
 
-      // 204 response code should be returned
-      expect(res.status).to.equal(204);
+      // Expect posts to be ordered by id
+      posts.reduce((a, b) => {
+        expect(+b.id).to.be.above(+a.id);
+        return b;
+      }, { id: 0 });
+    }));
 
-      // No content should be returned
-      expect(data).to.equal('');
+  it('should allow multiple tags and properly filter/order them', () => request(`${url}/posts?tags=tech,health,history,culture`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect 77 posts to be returned
+      expect(posts.length).to.equal(77);
+
+      // Expect all posts to have the tech tag
+      posts.forEach(({ tags }) => {
+        const memo = {}; // Initialize HashMap
+
+        // Initalize each tag as false
+        tags.forEach(tag => memo[tag] = false); // eslint-disable-line no-return-assign
+
+        // Expect the keys to include at least one of the specified keys
+        expect(memo).to.have.any.keys('tech', 'health', 'history', 'culture');
+      });
+    }));
+
+  it('should properly filter and order multiple tags', () => request(`${url}/posts?tags=tech,health,history,culture`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect posts to be ordered by id
+      posts.reduce((a, b) => {
+        expect(+b.id).to.be.above(+a.id);
+        return b;
+      }, { id: -1 });
+    }));
+
+  it('should allow sorting by popularity', () => request(`${url}/posts?tags=history,culture&sortBy=popularity`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect exactly 43 posts to be returned
+      expect(posts.length).to.equal(43);
+
+      // Expect posts to be ordered by popularity
+      posts.reduce((a, b) => {
+        expect(+b.popularity).to.be.at.least(+a.popularity);
+        return b;
+      }, { popularity: -1 });
+    }));
+
+  it('should allow sorting by likes', () => request(`${url}/posts?tags=history,culture&sortBy=likes`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect exactly 43 posts to be returned
+      expect(posts.length).to.equal(43);
+
+      // Expect posts to be ordered by likes
+      posts.reduce((a, b) => {
+        expect(+b.likes).to.be.at.least(+a.likes);
+        return b;
+      }, { likes: -1 });
+    }));
+
+  it('should allow sorting by reads', () => request(`${url}/posts?tags=history,culture&sortBy=reads`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect exactly 43 posts to be returned
+      expect(posts.length).to.equal(43);
+
+      // Expect posts to be ordered by reads
+      posts.reduce((a, b) => {
+        expect(+b.reads).to.be.at.least(+a.reads);
+        return b;
+      }, { reads: -1 });
+    }));
+
+  it('should allow sorting by ID', () => request(`${url}/posts?tags=history,culture&sortBy=id`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect exactly 43 posts to be returned
+      expect(posts.length).to.equal(43);
+
+      // Expect posts to be ordered by id
+      posts.reduce((a, b) => {
+        expect(+b.id).to.be.at.least(+a.id);
+        return b;
+      }, { id: -1 });
+    }));
+
+  it('should throw an error if sortBy field is invalid', () => request(`${url}/posts?tags=history,culture&sortBy=invalid`)
+    .then((res) => {
+      const { data } = res;
+      const error = 'sortBy parameter is invalid';
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(400);
+
+      // Expect the response to have a success property
+      expect(data.error).to.equal(error);
+    }));
+
+  it('should allow sorting id by descending order', () => request(`${url}/posts?tags=history,culture&direction=desc`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect exactly 43 posts to be returned
+      expect(posts.length).to.equal(43);
+
+      // Expect posts to be ordered by id
+      posts.reduce((a, b) => {
+        expect(+a.id).to.be.at.least(+b.id);
+        return b;
+      }, { id: Infinity });
+    }));
+
+  it('should allow sorting likes by descending order', () => request(`${url}/posts?tags=history,culture&sortBy=likes&direction=desc`)
+    .then((res) => {
+      const { data } = res;
+      const { posts } = data;
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(200);
+
+      // Expect exactly 43 posts to be returned
+      expect(posts.length).to.equal(43);
+
+      // Expect posts to be ordered by id
+      posts.reduce((a, b) => {
+        expect(+a.likes).to.be.at.least(+b.likes);
+        return b;
+      }, { likes: Infinity });
+    }));
+
+  it('should throw an error upon invalid direction', () => request(`${url}/posts?tags=history,culture&sortBy=likes&direction=lolwut`)
+    .then((res) => {
+      const { data } = res;
+      const error = 'direction parameter is invalid';
+
+      // Expect the response to have a 200 status code
+      expect(res.status).to.equal(400);
+
+      // Expect the response to have a success property
+      expect(data.error).to.equal(error);
     }));
 });

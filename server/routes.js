@@ -4,22 +4,9 @@ const controller = require('./controllers');
 
 // Connect controller methods to their corresponding routes
 
-/* Create */
-router.post('/reports', controller.reports.post);
+/* GET Routes */
+router.get('/ping', controller.ping.get);
 
-/* Read */
-router.get('/reports/:id', controller.reports.getOne);
-
-router.get('/reports', controller.reports.getAll);
-
-/* Update */
-router.put('/reports/:id', controller.reports.putId);
-
-router.put('/reports', controller.reports.put);
-
-/* Delete */
-router.delete('/reports/:id', controller.reports.deleteId);
-
-router.delete('/reports', controller.reports.delete);
+router.get('/posts', controller.posts.get);
 
 module.exports = router;

@@ -1,40 +1,36 @@
 {
-  "name": "hackerone-api",
+  "name": "posts-api",
   "version": "1.0.0",
   "description": "A full REST API with CRUD support and compatible with the JSON API specification",
   "main": "server",
   "scripts": {
-    "start": "node server",
+    "start": "nodemon server",
     "test": "mocha spec; RES=$?; kill %1; exit $RES",
     "seed": "node server/seed"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umairnadeem123/hackerone-api.git"
+    "url": "git"
   },
   "keywords": [
-    "hacker",
-    "one",
     "rest",
     "api"
   ],
   "author": "Umair Nadeem",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/umairnadeem123/hackerone-api/issues"
+    "url": "https://github.com/umairnadeem123/"
   },
-  "homepage": "https://github.com/umairnadeem123/hackerone-api#readme",
+  "homepage": "https://github.com/umairnadeem123/",
   "dependencies": {
     "axios": "^0.19.0",
     "body-parser": "^1.19.0",
     "chai": "^4.2.0",
     "eslint": "^6.0.1",
     "express": "^4.17.1",
-    "faker": "^4.1.0",
     "mocha": "^6.2.0",
-    "mongoose": "^5.6.5",
-    "mongoose-auto-increment": "^5.0.1",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "redis": "^2.8.0"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
