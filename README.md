@@ -35,6 +35,7 @@ npm start
 | GET  | ```/api/posts```  | Returns posts in JSON format. The 'tags' query parameter is requied. SortBy and direction params are optional. |
 
 ```/api/posts?tags={tags}```
+
 | Field  | Type | Description | Example | 
 | ------------- | ------------- |------------- |------------- |
 | tags  | ```String (required)```  | Comma delimited tags | health,tech,history |
