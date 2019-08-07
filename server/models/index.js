@@ -1,11 +1,12 @@
 const axios = require('axios');
-const helpers = require('../helpers');
+const config = require('./config');
+const { concat, filter, validate } = require('../helpers');
 
 module.exports = {
   get: (tags, sortBy = 'id', direction = 'asc') => {
     const tagsArr = tags.split(','); // Convert the tags into an array
     const promises = [];
-    const url = 'SOME API';
+    const url = config.API;
 
     tagsArr.forEach((tag) => {
       promises.push(
@@ -17,12 +18,11 @@ module.exports = {
 
     return Promise.all(promises)
       .then(
-        posts => helpers.concat(posts), // Concatenate all posts
+        posts => concat(posts), // Concatenate all posts
       ).then(
-        posts => helpers.filter(posts), // Filter by ID in O(n) time
-      )
-      .then(
-        posts => helpers.validate(posts, sortBy, direction), // Validate query params
+        posts => filter(posts), // Filter by ID in O(n) time
+      ).then(
+        posts => validate(posts, sortBy, direction), // Validate query params
       );
   },
 };
