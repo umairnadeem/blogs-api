@@ -23,7 +23,6 @@ Insert API client ID and secret in server/config/indexExample.js, then rename it
 From within the root directory:
 ```sh
 npm install
-npm run react-dev
 npm start
 ```
 - In a browser, go to: localhost:3000
@@ -35,11 +34,12 @@ npm start
 | GET  | ```/api/ping```  | Returns a 200 response affirming the API is working |
 | GET  | ```/api/posts```  | Returns posts in JSON format. The 'tags' query parameter is requied. SortBy and direction params are optional. |
 
+```/api/posts?tags={tags}```
 | Field  | Type | Description | Example | 
 | ------------- | ------------- |------------- |------------- |
-| tags  | ```String (required)```  | Comma delimited tags |
-| sortBy  | ```String (optional)```  | One of id, reads, likes, or popularity |
-| direction  | ```String (optional)```  | Whether to sort ascending or descending order. One of asc or desc |
+| tags  | ```String (required)```  | Comma delimited tags | health,tech,history |
+| sortBy  | ```String (optional)```  | One of id, reads, likes, or popularity | popularity |
+| direction  | ```String (optional)```  | Whether to sort ascending or descending order. One of asc or desc | desc |
 
 ## API Examples
 
